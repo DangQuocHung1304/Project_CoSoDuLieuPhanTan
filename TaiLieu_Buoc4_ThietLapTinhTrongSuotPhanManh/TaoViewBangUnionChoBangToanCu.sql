@@ -1,0 +1,57 @@
+﻿-- 1. View cho bảng nhomnc
+CREATE OR ALTER VIEW v_nhomnc AS
+SELECT
+    manhom COLLATE DATABASE_DEFAULT AS manhom,
+    tennhom COLLATE DATABASE_DEFAULT AS tennhom,
+    tenphong COLLATE DATABASE_DEFAULT AS tenphong
+FROM LINK_P1.QLDeAn_P1.dbo.nhomnc
+UNION ALL
+SELECT
+    manhom COLLATE DATABASE_DEFAULT AS manhom,
+    tennhom COLLATE DATABASE_DEFAULT AS tennhom,
+    tenphong COLLATE DATABASE_DEFAULT AS tenphong
+FROM LINK_P2.QLDeAn_P2.dbo.nhomnc;
+GO
+
+-- 2. View cho bảng nhanvien
+CREATE OR ALTER VIEW v_nhanvien AS
+SELECT
+    manv COLLATE DATABASE_DEFAULT AS manv,
+    hoten COLLATE DATABASE_DEFAULT AS hoten,
+    manhom COLLATE DATABASE_DEFAULT AS manhom
+FROM LINK_P1.QLDeAn_P1.dbo.nhanvien
+UNION ALL
+SELECT
+    manv COLLATE DATABASE_DEFAULT AS manv,
+    hoten COLLATE DATABASE_DEFAULT AS hoten,
+    manhom COLLATE DATABASE_DEFAULT AS manhom
+FROM LINK_P2.QLDeAn_P2.dbo.nhanvien;
+GO
+
+-- 3. View cho bảng dean
+CREATE OR ALTER VIEW v_dean AS
+SELECT
+    mada COLLATE DATABASE_DEFAULT AS mada,
+    tenda COLLATE DATABASE_DEFAULT AS tenda,
+    manhom COLLATE DATABASE_DEFAULT AS manhom
+FROM LINK_P1.QLDeAn_P1.dbo.dean
+UNION ALL
+SELECT
+    mada COLLATE DATABASE_DEFAULT AS mada,
+    tenda COLLATE DATABASE_DEFAULT AS tenda,
+    manhom COLLATE DATABASE_DEFAULT AS manhom
+FROM LINK_P2.QLDeAn_P2.dbo.dean;
+GO
+
+-- 4. View cho bảng thamgia
+CREATE OR ALTER VIEW v_thamgia AS
+SELECT
+    manv COLLATE DATABASE_DEFAULT AS manv,
+    mada COLLATE DATABASE_DEFAULT AS mada
+FROM LINK_P1.QLDeAn_P1.dbo.thamgia
+UNION ALL
+SELECT
+    manv COLLATE DATABASE_DEFAULT AS manv,
+    mada COLLATE DATABASE_DEFAULT AS mada
+FROM LINK_P2.QLDeAn_P2.dbo.thamgia;
+GO

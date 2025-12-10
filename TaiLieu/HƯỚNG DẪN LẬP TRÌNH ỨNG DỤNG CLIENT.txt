@@ -1,0 +1,93 @@
+HƯỚNG DẪN LẬP TRÌNH ỨNG DỤNG CLIENT CSDL PHÂN TÁN (2-TIER)
+1. YÊU CẦU CÔNG NGHỆ VÀ MÔ HÌNH TRIỂN KHAI
+Mô hình: Kiến trúc 2 Tầng (Client kết nối trực tiếp đến Database).
+
+Ngôn ngữ: C# (hoặc ngôn ngữ .NET khác).
+
+Database kết nối: Site Gốc (CSDL QLDeAn) – Nơi chứa các View Toàn cục và Link Server.
+
+Mục tiêu: Chứng minh tính Trong suốt Phân mảnh (Mức 1) và Trong suốt Vị trí (Mức 2).
+
+2. THIẾT LẬP KẾT NỐI
+Ứng dụng phải kết nối đến Máy Chủ Gốc (Ví dụ: TEN_SERVER_GOC).
+
+// Thay thế TEN_SERVER_GOC bằng tên Instance thực tế của máy chủ gốc
+string connectionString = 
+    "Data Source=TEN_SERVER_GOC; Initial Catalog=QLDeAn; " +
+    "User ID=sa; Password=MAT_KHAU; Integrated Security=False;";
+3. CÁC HÀM XỬ LÝ DỮ LIỆU CỐT LÕI
+3.1. HÀM LOAD DỮ LIỆU TOÀN CỤC (MỨC 1)
+Mục đích: Hiển thị dữ liệu toàn bộ hệ thống bằng cách truy vấn View.
+
+Lệnh SQL: SELECT * FROM [tên_view] (Ví dụ: nhanvien_view)
+
+C#
+
+public DataTable LoadToanCuc(string viewName)
+{
+    using (SqlConnection conn = new SqlConnection(connectionString))
+    {
+        string sql = "SELECT * FROM " + viewName;
+        SqlDataAdapter da = new SqlDataAdapter(sql, conn);
+        DataTable dt = new DataTable();
+        da.Fill(dt);
+        return dt;
+    }
+}
+3.2. HÀM THỰC THI TRUY VẤN PHỨC TẠP (CÂU 1)
+Yêu cầu: Cho biết mã đề án, tên đề án của các đề án thuộc nhóm ($manhom) mà có nhân viên của nhóm nghiên cứu khác tham gia.
+
+MỨC 1 (TRONG SUỐT PHÂN MẢNH)
+Logic: Sử dụng View để thực hiện truy vấn JOIN trên toàn bộ hệ thống.
+
+C#
+
+string sql_MUC1 = 
+    "SELECT DA.mada, DA.tenda " +
+    "FROM dean_view DA " +
+    "JOIN thamgia_view TG ON DA.mada = TG.mada " +
+    "JOIN nhanvien_view NV ON TG.manv = NV.manv " +
+    "WHERE DA.manhom = @manhom AND NV.manhom <> @manhom";
+MỨC 2 (TRONG SUỐT VỊ TRÍ)
+Logic: Sử dụng cú pháp 4 phần và UNION ALL thủ công để minh họa rõ vị trí dữ liệu.
+
+C#
+
+// Lưu ý: Cú pháp này rất dài, nên gọi qua Stored Procedure hoặc dùng CommandText dài.
+string sql_MUC2 = 
+    "SELECT A.mada, A.tenda FROM " +
+    " (SELECT mada, tenda, manhom FROM LINK_P1.QLDeAn_P1.dbo.dean UNION ALL " +
+    "  SELECT mada, tenda, manhom FROM LINK_P2.QLDeAn_P2.dbo.dean) AS A " +
+    " JOIN (... UNION ALL ...) AS TG ON A.mada = TG.mada " +
+    " JOIN (... UNION ALL ...) AS NV ON TG.manv = NV.manv " +
+    " WHERE A.manhom = @manhom AND NV.manhom <> @manhom";
+3.3. HÀM CẬP NHẬT PHÂN TÁN (CÂU 2)
+Yêu cầu: Sửa tên phòng từ 'P1' thành 'P2' của nhóm nghiên cứu có mã là 'NC01'.
+
+Logic: Cần xác định Site đích (Ví dụ: NC01 đang ở Site P1) và thực thi lệnh trực tiếp trên Link Server đó.
+
+C#
+
+public void CapNhatTenPhong(string maNhom, string tenPhongMoi, string linkServer)
+{
+    // Lệnh UPDATE được gói trong EXEC AT để chạy trên máy chủ đích
+    string updateSql = 
+        $"EXEC ('UPDATE QLDeAn_P1.dbo.nhomnc SET tenphong = ''{tenPhongMoi}'' WHERE manhom = ''{maNhom}''') AT {linkServer}";
+
+    using (SqlConnection conn = new SqlConnection(connectionString))
+    {
+        SqlCommand cmd = new SqlCommand(updateSql, conn);
+        conn.Open();
+        cmd.ExecuteNonQuery();
+    }
+}
+4. YÊU CẦU GIAO DIỆN
+Mục Quản lý Dữ liệu: Sử dụng DataGridView để hiển thị dữ liệu từ các View toàn cục (Mức 1).
+
+Mục Truy vấn: Cung cấp 1 Textbox để nhập $manhom và 2 nút bấm riêng biệt:
+
+Button "Truy vấn Mức 1": Gọi hàm Load dữ liệu bằng lệnh SQL Mức 1.
+
+Button "Truy vấn Mức 2": Gọi hàm Load dữ liệu bằng lệnh SQL Mức 2.
+
+Mục Cập nhật (Câu 2): Cung cấp giao diện để người dùng nhập Mã nhóm, Tên phòng mới và gọi hàm CapNhatTenPhong.
